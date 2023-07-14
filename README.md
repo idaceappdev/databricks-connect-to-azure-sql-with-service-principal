@@ -123,3 +123,42 @@ buildversionDf = spark.read \
 
 display(buildversionDf)
 ```
+
+## Scala Example with Service Principal
+
+```csharp
+%scala
+import com.microsoft.aad.msal4j._
+import java.util.Collections
+import com.microsoft.azure.sqldb.spark.config.Config
+import com.microsoft.azure.sqldb.spark.connect._
+
+var accessToken = ""
+val tenantId =  dbutils.secrets.get(scope="defaultScope",key="TenantId")
+val authority = "https://login.microsoftonline.com/" + tenantId
+val resourceAppIdURI = "https://database.windows.net/.default"
+
+val ServicePrincipalId =dbutils.secrets.get(scope = secretScope, key = DatabricksSpnId)
+val ServicePrincipalPwd =dbutils.secrets.get(scope = secretScope, key = DatabricksSpnSecret)
+
+val ClientCred = ConfidentialClientApplication.builder(ServicePrincipalId,
+  ClientCredentialFactory.createFromSecret(ServicePrincipalPwd)).authority(authority).build()
+val clientCredentialParam = ClientCredentialParameters.builder(Collections.singleton(resourceAppIdURI)).build()
+
+println(">>> Acquiring Access Token ..")
+accessToken = ClientCred.acquireToken(clientCredentialParam).get().accessToken()
+println("accessToken ---->> " + accessToken)
+
+val config = Config(Map(
+  "url"                   -> "sebichondodbserver.database.windows.net",
+  "databaseName"          -> "testdb",
+  "dbTable"               -> "[dbo].[BuildVersion]",
+  "accessToken"           -> accessToken,
+  "hostNameInCertificate" -> "*.database.windows.net",
+  "encrypt"               -> "true"
+))
+
+val collection = sqlContext.read.sqlDB(config)
+collection.show()
+
+```
