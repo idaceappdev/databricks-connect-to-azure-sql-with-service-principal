@@ -25,8 +25,9 @@ We write both the client Id and secret to Key Vault for a number of reasons.
 2. Normally we would have an instance of Databricks and Key Vault per environment and when we come to referencing the secrets, we want the secrets names to remain the same, so the code in our Databricks notebooks referencing the secrets doesn’t need to be modified when we deploy to different environments.
 
 In the key vault, generate secrets that represent the values from the App Registration.
-DatabricksSpnId (Client Id)
-DatabricksSpnSecret (Client Secret)
+
+1. DatabricksSpnId (Client Id)
+2. DatabricksSpnSecret (Client Secret)
 
 ## Azure SQL
 
