@@ -38,3 +38,88 @@ The app still needs permission to log into Azure SQL and access the objects with
 ## Databricks
 
 To connect to Azure SQL, you will need to install the [SQL Spark Connector](https://github.com/microsoft/sql-spark-connector) and the [Microsoft Authentication Library (MSAL) for Python](https://github.com/AzureAD/microsoft-authentication-library-for-python).
+
+It’ll take a couple of moments and the libraries will be installed. Also, if you haven’t already, Create a secret scope to your Key Vault where your client Id, secret, and tenant Id have been generated. I called mine defaultScope.
+
+So now we are ready to roll. The first screenshot shows the configuration pieces to connect to Azure SQL:
+
+1. The retrieval of the service principal, secret, and tenant id from Key Vault.
+2. My database URL, database, and table I want to collect to
+
+   ![Databricks Python](images/databricks_python.png)
+
+All very well, but we want to get to our Build versions. The following snippet shows the follwoing
+
+1. Retrieves an authentication token from Active Directory which our application is registered.
+2. Creates a data frame containing our build versions using the config and authentication token we retrieved
+3. Displays our data frame containing our build versions
+
+   ![Databricks Display Query Results](images/databricks_query_the_db.png)
+
+   So there we are. We connected to Azure SQL using a service principal which gives us a lot more control over the activities that are taking place in our Databricks notebooks.
+
+   ![Databricks Final Results](images/databricks_access_token.png)
+
+## Python Example with Service Principal
+
+```csharp
+import msal
+import logging
+
+resource_app_id_url = "https://database.windows.net/"
+
+service_principal_id = dbutils.secrets.get(scope="defaultScope",key="DatabricksSpnId")
+service_principal_secret = dbutils.secrets.get(scope="defaultScope",key="DatabricksSpnSecret")
+tenant_id = dbutils.secrets.get(scope="defaultScope",key="TenantId")
+authority = "https://login.windows.net/" + tenant_id
+scope ="https://database.windows.net/.default"
+
+azure_sql_url = "jdbc:sqlserver://sebichondodbserver.database.windows.net"
+database_name = "testdb"
+db_table = "[dbo].[BuildVersion]"
+
+encrypt = "true"
+host_name_in_certificate = "*.database.windows.net"
+
+# Create a preferably long-lived app instance which maintains a token cache.
+app = msal.ConfidentialClientApplication(
+    service_principal_id,
+    authority,
+    client_credential,
+)
+
+# The pattern to acquire a token looks like this.
+result = None
+
+# Firstly, looks up a token from cache
+# Since we are looking for token for the current app, NOT for an end user,
+# notice we give account parameter as None.
+result  = app.acquire_token_silent(
+    [scope], account=None
+)
+
+if not result:
+    logging.info("No suitable token exists in cache. Let's get a new one from AAD.")
+    result = app.acquire_token_for_client(scope
+    )
+
+if "access_token" in result:
+    print("Access token:\n")
+    print(result["access_token"])
+else:
+    print(result.get("error"))
+    print(result.get("error_description"))
+    print(result.get("correlation_id"))  # You may need this when reporting a bug
+
+buildversionDf = spark.read \
+             .format("com.microsoft.sqlserver.jdbc.spark") \
+             .option("url", azure_sql_url) \
+             .option("dbtable", db_table) \
+             .option("databaseName", database_name) \
+             .option("accessToken", result["access_token"]) \
+             .option("encrypt", "true") \
+             .option("hostNameInCertificate",host_name_in_certificate) \
+             .load()
+
+display(buildversionDf)
+```
