@@ -165,9 +165,9 @@ collection.show()
 
 ## Commonly Faced Issues
 
-java.lang.NoClassDefFoundError: com/microsoft/aad/adal4j/AuthenticationException
+java.lang.NoClassDefFoundError: com/microsoft/aad/msal4j/AuthenticationException
 
-This issue exists because this package packs in a SQL Server driver, but not MSAL4J. So when the driver jar is loaded and then needs ADAL4J, it expects to find it in the same place, and it fails. There is a simple set of steps to fix this issue if youre stuck on it, but this dependency problem should have a top down fix :)
+This issue exists because this package packs in a SQL Server driver, but not MSAL4J. So when the driver jar is loaded and then needs MSAL4J, it expects to find it in the same place, and it fails. There is a simple set of steps to fix this issue if youre stuck on it, but this dependency problem should have a top down fix :)
 
 Steps to fix the issue:
 
