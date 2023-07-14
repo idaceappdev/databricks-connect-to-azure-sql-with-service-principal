@@ -34,3 +34,7 @@ In the key vault, generate secrets that represent the values from the App Regist
 The app still needs permission to log into Azure SQL and access the objects within it. You’ll need to Create that user (service principal) in the database and then grant it permissions on the underlying objects. In the example below I have given the service principal select permission on the dbo schema.
 
 ![Azure SQL](images/azuresql.png)
+
+## Databricks
+
+To connect to Azure SQL, you will need to install the [SQL Spark Connector](https://github.com/microsoft/sql-spark-connector) and the [Microsoft Authentication Library (MSAL) for Python](https://github.com/AzureAD/microsoft-authentication-library-for-python).
