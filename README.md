@@ -162,3 +162,23 @@ val collection = sqlContext.read.sqlDB(config)
 collection.show()
 
 ```
+
+## Commonly Faced Issues
+
+java.lang.NoClassDefFoundError: com/microsoft/aad/adal4j/AuthenticationException
+
+This issue exists because this package packs in a SQL Server driver, but not MSAL4J. So when the driver jar is loaded and then needs ADAL4J, it expects to find it in the same place, and it fails. There is a simple set of steps to fix this issue if youre stuck on it, but this dependency problem should have a top down fix :)
+
+Steps to fix the issue:
+
+1. Add a global or cluster init script to remove old versions of the mssql driver from the /databricks/jars folder, or add this line to an existing script: rm /databricks/jars/_mssql_
+2. Add the MSAL4J and mssql packages, I used Maven, but any way should work. DO NOT install the SQL spark connector this way.
+3. Add the driver class to your connection configuration:
+
+```csharp
+connectionProperties = {
+"Driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+}
+```
+
+For more information and explanation, visit the closed [issue](https://github.com/microsoft/sql-spark-connector/issues/26).
